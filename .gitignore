@@ -1,0 +1,11 @@
+.vercel
+/node_modules
+
+# local env files
+.env*.local
+
+# vercel
+.vercel
+
+#secrets
+.env
