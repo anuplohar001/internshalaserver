@@ -27,7 +27,7 @@ const s3Client = new S3Client({
 })
 
 const corsOptions = {
-    origin: ['http://localhost:3001', 'https://socialmedia221.netlify.app'],
+    origin: ['http://localhost:3000', 'https://socialmedia221.netlify.app'],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"]
 };
 
