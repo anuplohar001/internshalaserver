@@ -8,7 +8,8 @@ const userSchema = new mongoose.Schema({
         required: [true, 'Username is required !'],
     },
     images: [{
-        path: String,
+        url: String,
+        ctype: String,
         filename: String,
         socialhandle: String
     }],

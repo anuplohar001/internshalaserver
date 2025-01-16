@@ -5,25 +5,54 @@ import User from '../models/user.js'
 import multer from 'multer'
 import bodyParser from 'body-parser'
 import { configDotenv } from 'dotenv';
-configDotenv();
+import {GetObjectCommand, PutObjectCommand, S3Client} from "@aws-sdk/client-s3"
+import {getSignedUrl} from '@aws-sdk/s3-request-presigner'
+import crypto from 'crypto'
 
+
+configDotenv();
+const generateRandom = (bytes = 16) => crypto.randomBytes(bytes).toString('hex')
+const bucketName = process.env.BUCKET_NAME
+const bucketRegion = process.env.BUCKET_REGION
+const accessKey = process.env.ACCESS_KEY
+const secretAccessKey = process.env.SECRET_ACCESS_KEY
 const app = express();
-const port = 5000
+
+const s3Client = new S3Client({
+    credentials: {
+        accessKeyId: accessKey,
+        secretAccessKey: secretAccessKey,
+    },
+    region: bucketRegion
+})
+
 const corsOptions = {
-    origin: ['http://localhost:3000', 'https://socialmedia221.netlify.app'],
+    origin: ['http://localhost:3001', 'https://socialmedia221.netlify.app'],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"]
 };
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/');
-    },
-    filename: (req, file, cb) => {
-        const uniqueName = `${Date.now()}-${file.originalname}`;
-        cb(null, uniqueName);
-    },
-});
-const upload = multer({ storage: storage });
+const storage = multer.memoryStorage()
+const upload = multer({ storage: storage })
+
+const uploadAWS = (fileBuffer, name, mimetype) => {
+    const uploadParam = {
+        Bucket: bucketName,
+        Body: fileBuffer,
+        Key: name,
+        ContentType: mimetype
+    }
+    return s3Client.send(new PutObjectCommand(uploadParam))
+}
+
+const getAws = async (key) => {
+    const imageparam = {
+        Bucket: bucketName,
+        Key: key
+    }
+    const command = new GetObjectCommand(imageparam);
+    const url = await getSignedUrl(s3Client, command);
+    return url
+}
 
 app.use(bodyParser.json());
 app.use(express.json())
@@ -40,19 +69,24 @@ app.post('/userdetails', upload.array('images'), async (req, res) => {
     const data = req.body
     const files = req.files
     const socialhandle = data.socialhandle.toLowerCase();
+
     const imagesFile = files.map(file => ({
         username: data.username,
-        filename: file.originalname,
-        path: file.path
+        filename: generateRandom(),
+        fileBuffer: file.buffer,
+        mimetype : file.mimetype
     }));
+
+    
 
     try {
 
         for (let i = 0; i < imagesFile.length; i++) {
-            const element = imagesFile[i];       
+            const element = imagesFile[i];
+            await uploadAWS(element.fileBuffer, element.filename, element.mimetype)       
             const newuser = await User.findOneAndUpdate(
                 { username: element.username }, 
-                { $push: { images: { path: element.path, filename: element.filename, socialhandle: data.socialhandle } } },
+                { $push: { images: { ctype: element.mimetype, filename: element.filename, socialhandle: data.socialhandle } } },
                 { new: true, upsert: true }
             )
         }
@@ -61,7 +95,7 @@ app.post('/userdetails', upload.array('images'), async (req, res) => {
         const exists = user.socialhandles.some(handle => handle.name === socialhandle);
         
         if (!exists) {
-            console.log(data)
+            // console.log(data)
             const newuser = await User.findOneAndUpdate(
                 { username: data.username },
                 { $push: { socialhandles: { name: socialhandle } } }
@@ -80,13 +114,15 @@ app.post('/userdetails', upload.array('images'), async (req, res) => {
 app.get('/getusers', async (req, res) => {
     try {
         const users = await User.find({})
+        for(let user of users) {
+            for(let img of user.images) {
+                img.url = await getAws(img.filename)
+            }
+        }
         return res.status(200).send({users})
     } catch (error) {
         return res.status(500).send({ message: "Something went wrong" })
     }
 })
 
-
-app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`)
-})
+export default app
