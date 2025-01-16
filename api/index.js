@@ -10,7 +10,7 @@ configDotenv();
 const app = express();
 const port = 5000
 const corsOptions = {
-    origin: 'http://localhost:3000',
+    origin: ['http://localhost:3000', 'https://socialmedia221.netlify.app'],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"]
 };
 
