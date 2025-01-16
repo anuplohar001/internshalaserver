@@ -1,11 +1,13 @@
 import express from 'express'
 import mongoose from 'mongoose'
 import cors from 'cors'
-import User from './models/user.js'
+import User from '../models/user.js'
 import multer from 'multer'
 import bodyParser from 'body-parser'
+import { configDotenv } from 'dotenv';
+configDotenv();
+
 const app = express();
-const MONGODB_URI = "mongodb+srv://anuplohar001:anup220803@anup-db.5z6a8tl.mongodb.net/demodb?retryWrites=true&w=majority&appName=Anup-DB"
 const port = 5000
 const corsOptions = {
     origin: 'http://localhost:3000',
@@ -29,7 +31,7 @@ app.use(cors(corsOptions))
 app.get('/', (req, res) => {
     res.send("Welcome to server ")
 })
-mongoose.connect(MONGODB_URI).then(() => {
+mongoose.connect(process.env.MONGODB_URI).then(() => {
     console.log("Successfully connected")
 });
 
@@ -74,11 +76,6 @@ app.post('/userdetails', upload.array('images'), async (req, res) => {
   
 })
 
-
-app.get('/userimages/:username', async (req, res) => {
-    const username = req.params.username
-    console.log(username)
-})
 
 app.get('/getusers', async (req, res) => {
     try {
