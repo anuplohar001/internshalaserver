@@ -85,7 +85,7 @@ app.post('/userdetails', upload.array('images'), async (req, res) => {
             const element = imagesFile[i];
             await uploadAWS(element.fileBuffer, element.filename, element.mimetype)       
             const newuser = await User.findOneAndUpdate(
-                { username: element.username }, 
+                { username: data.username }, 
                 { $push: { images: { ctype: element.mimetype, filename: element.filename, socialhandle: data.socialhandle } } },
                 { new: true, upsert: true }
             )
