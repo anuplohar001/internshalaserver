@@ -7,17 +7,14 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Username is required !'],
     },
-    images: [{
-        url: String,
-        ctype: String,
-        filename: String,
-        socialhandle: String
-    }],
-
-    socialhandles: [{
-        name: String
+    password: {
+        type: String,        
+    },
+    liveUser : [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Users'
     }]
 });
 
-const User = mongoose.models.users || mongoose.model("User", userSchema);
+const User = mongoose.models.user || mongoose.model("Users", userSchema);
 export default User
